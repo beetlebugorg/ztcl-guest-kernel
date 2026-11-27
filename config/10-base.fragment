@@ -1,0 +1,64 @@
+# The kernel of the guest of ztcl::vm (ztcl#203): tinyconfig, then these
+# options, then kernel-ARCH.fragment. Each driver is built in, so the
+# guest needs no modules. Virtio comes on PCI (Virtualization.framework)
+# and on MMIO (the VMM of the KVM part of the plan), with the devices of
+# MMIO from the command line (virtio_mmio.device=SIZE@ADDR:IRQ).
+CONFIG_64BIT=y
+CONFIG_SMP=y
+CONFIG_NR_CPUS=8
+CONFIG_PRINTK=y
+CONFIG_PRINTK_TIME=y
+# A sleep of one tick is 1 ms: the probe of each virtio PCI device
+# sleeps, and at the 250 Hz of tinyconfig the probes cost 21 ms.
+CONFIG_HZ_1000=y
+CONFIG_BUG=y
+CONFIG_MULTIUSER=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_POSIX_TIMERS=y
+CONFIG_FILE_LOCKING=y
+CONFIG_SHMEM=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_RD_GZIP=y
+CONFIG_BINFMT_ELF=y
+CONFIG_BINFMT_SCRIPT=y
+CONFIG_PROC_FS=y
+CONFIG_SYSFS=y
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_TMPFS=y
+CONFIG_TTY=y
+CONFIG_UNIX98_PTYS=y
+CONFIG_PCI=y
+CONFIG_PCI_MSI=y
+CONFIG_PCI_HOST_GENERIC=y
+CONFIG_VIRTIO_MENU=y
+CONFIG_VIRTIO=y
+CONFIG_VIRTIO_PCI=y
+CONFIG_VIRTIO_MMIO=y
+CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES=y
+CONFIG_VIRTIO_CONSOLE=y
+CONFIG_HW_RANDOM=y
+CONFIG_HW_RANDOM_VIRTIO=y
+CONFIG_BLOCK=y
+CONFIG_VIRTIO_BLK=y
+CONFIG_NET=y
+CONFIG_UNIX=y
+CONFIG_VSOCKETS=y
+CONFIG_VIRTIO_VSOCKETS=y
+CONFIG_FUSE_FS=y
+CONFIG_VIRTIO_FS=y
+# The read-only root disk of a signed image: squashfs, checked block by
+# block by dm-verity with the root hash of the signed manifest, which
+# the command line gives (dm-mod.create).
+CONFIG_MD=y
+CONFIG_BLK_DEV_DM=y
+CONFIG_DM_INIT=y
+CONFIG_DM_VERITY=y
+CONFIG_CRYPTO_SHA256=y
+CONFIG_MISC_FILESYSTEMS=y
+CONFIG_SQUASHFS=y
+CONFIG_SQUASHFS_ZLIB=y

@@ -1,0 +1,33 @@
+# The boot time options of the guest of ztcl::vm. Each line has its
+# measured gain in TIMES.md.
+# 256 legacy PTY pairs make 512 device nodes at boot.
+# CONFIG_LEGACY_PTYS is not set
+# The guest has no screen or keyboard: no VT, input, or i8042 probe.
+# CONFIG_VT is not set
+# CONFIG_INPUT is not set
+# CONFIG_SERIO is not set
+# The monitor has one UART, at 0x3f8.
+CONFIG_SERIAL_8250_NR_UARTS=1
+CONFIG_SERIAL_8250_RUNTIME_UARTS=1
+# The agent uses vsock. IPv4 stays for the networks of containers.
+# CONFIG_IPV6 is not set
+# CONFIG_WIRELESS is not set
+# CONFIG_ETHTOOL_NETLINK is not set
+# The root is squashfs on dm-verity. SHA-256 with SHA-NI or AVX2 checks
+# the blocks faster than the generic code. LZ4 is for a root that the
+# image makes with LZ4.
+CONFIG_CRYPTO_SHA256_SSSE3=y
+CONFIG_SQUASHFS_LZ4=y
+CONFIG_SQUASHFS_4K_DEVBLK_SIZE=y
+# The options of the command line that every boot of this guest uses.
+# The command line of the VMM comes after them, so it can change them.
+# percpu_alloc=page: the first chunk of the per-CPU memory takes only
+#   its pages, not a 2 MiB unit that the boot zeroes.
+# console=ttynull: with no console= of the VMM, the kernel log goes to
+#   no device. Else the 8250 is the console, and each byte of a warning
+#   is an exit to the VMM.
+# tsc=reliable: no clocksource watchdog and no TSC checks.
+# ioapic_clean: see patches/0003.
+CONFIG_CMDLINE_BOOL=y
+CONFIG_CMDLINE="percpu_alloc=page console=ttynull tsc=reliable ioapic_clean"
+CONFIG_NULL_TTY=y

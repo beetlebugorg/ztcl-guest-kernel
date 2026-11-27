@@ -1,0 +1,26 @@
+# The x86-64 options of the guest kernel of ztcl::vm on KVM (ztcl#203),
+# after kernel.fragment. The VMM of ztcl (src/kvm.zig) has its devices
+# on virtio-mmio, given on the command line, and no PCI or ACPI. An MP
+# table gives the CPUs and the I/O APIC.
+CONFIG_64BIT=y
+CONFIG_HYPERVISOR_GUEST=y
+CONFIG_PARAVIRT=y
+CONFIG_KVM_GUEST=y
+CONFIG_X86_MPPARSE=y
+# CONFIG_PCI is not set
+# CONFIG_ACPI is not set
+CONFIG_VIRTIO_MMIO=y
+CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_KERNEL_LZ4=y
+CONFIG_NET_9P=y
+CONFIG_NET_9P_VIRTIO=y
+CONFIG_9P_FS=y
+# The signed guest image (ztcl#312): dm-verity on the read-only disks,
+# set up from the command line (dm-mod.create=) with the root hash of
+# the manifest.
+CONFIG_MD=y
+CONFIG_BLK_DEV_DM=y
+CONFIG_DM_INIT=y
+CONFIG_DM_VERITY=y
