@@ -12,6 +12,9 @@ ztcl and its other projects use only the built kernels, the config fragments, an
 - `build.sh`: builds the kernel from the release archive of kernel.org, with the patches and the fragments. GCC 16.2.1 (this host) and GCC 13 (the Ubuntu 24.04 runners of CI) both build it.
 - `build-inc.sh`: an incremental build in `work/` for tests.
 - `TIMES.md`: the boot times, and the gain of each change.
+- `UPDATING.md`: the update policy: the newest stable release, point releases within days, and what to do when a patch does not apply.
+- `tools/bench.sh`: the boot times of kernels on KVM with the verity root, round robin.
+- `.github/workflows/update.yml`: each day, a PR for a new stable release, with the boot test and the times.
 - `.github/workflows/build.yml`: builds both architectures on each push to main. The artifacts are `guest-kernel-x86_64` and `guest-kernel-arm64`.
 
 ## Build

@@ -1,0 +1,165 @@
+name: Update
+# Each day: if kernel.org has a newer stable Linux than build.sh, build
+# it with our fragments and patches (x86-64 and arm64), run the boot
+# test of ztcl on KVM, time the boot against the current kernel, and
+# open a PR with the times and a summary of the changelog. A patch that
+# no longer applies fails the job; UPDATING.md says what to do then.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "A Linux version to build in place of the newest stable (a test)"
+        required: false
+      dry_run:
+        description: "Build, test, and time, but open no PR"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    outputs:
+      new: ${{ steps.v.outputs.new }}
+      version: ${{ steps.v.outputs.version }}
+      sha: ${{ steps.v.outputs.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest=$(curl -fsSL https://www.kernel.org/releases.json | jq -r .latest_stable.version)
+          [ -n "${{ inputs.version }}" ] && latest="${{ inputs.version }}"
+          current=$(sed -n 's/^KERNEL=${KERNEL:-\(.*\)}$/\1/p' build.sh)
+          echo "current $current, latest stable $latest"
+          new=false
+          if [ "${{ inputs.dry_run }}" = true ]; then
+            new=true
+          elif [ "$latest" != "$current" ] && [ "$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -1)" = "$latest" ]; then
+            if gh pr list --head "update-linux-$latest" --state all --json number -q '.[0].number' | grep -q .; then
+              echo "a PR for $latest exists"
+            else
+              new=true
+            fi
+          fi
+          sha=""
+          if [ "$new" = true ]; then
+            major=${latest%%.*}
+            sha=$(curl -fsSL "https://cdn.kernel.org/pub/linux/kernel/v$major.x/sha256sums.asc" | awk -v f="linux-$latest.tar.xz" '$2 == f {print $1}')
+            [ ${#sha} -eq 64 ] || { echo "error: no SHA-256 for linux-$latest.tar.xz"; exit 1; }
+          fi
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+          echo "version=$latest" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  arm64:
+    needs: check
+    if: needs.check.outputs.new == 'true'
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - run: sudo apt-get update && sudo apt-get install -y build-essential flex bison bc libelf-dev libssl-dev
+      - name: Build the new kernel for arm64
+        run: |
+          sed -i "s/^KERNEL=\${KERNEL:-.*}$/KERNEL=\${KERNEL:-${{ needs.check.outputs.version }}}/; s/^KERNEL_SHA=.*/KERNEL_SHA=${{ needs.check.outputs.sha }}/" build.sh
+          ARCH=arm64 ./build.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: guest-kernel-arm64-${{ needs.check.outputs.version }}
+          path: out/arm64/
+
+  x86_64:
+    needs: check
+    if: needs.check.outputs.new == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: beetlebugorg/ztcl
+          path: ztcl
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        with:
+          version: "0.17.0"
+      - run: sudo apt-get update && sudo apt-get install -y build-essential flex bison bc libelf-dev libssl-dev cpio squashfs-tools cryptsetup-bin
+      - name: Build the current kernel
+        run: OUT=$PWD/out/old ./build.sh
+      - name: Build the new kernel
+        run: |
+          sed -i "s/^KERNEL=\${KERNEL:-.*}$/KERNEL=\${KERNEL:-${{ needs.check.outputs.version }}}/; s/^KERNEL_SHA=.*/KERNEL_SHA=${{ needs.check.outputs.sha }}/" build.sh
+          ./build.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: guest-kernel-x86_64-${{ needs.check.outputs.version }}
+          path: out/x86_64/
+      - name: Open KVM and vsock to the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+          sudo modprobe vhost_vsock && sudo chmod 666 /dev/vhost-vsock
+          ls -l /dev/kvm /dev/vhost-vsock
+      - name: Boot test and times on KVM
+        run: |
+          (cd ztcl && zig build -j4)
+          g=$PWD/guest
+          mkdir -p "$g"
+          # The agent is the first process, so the boot needs no BusyBox.
+          : > "$g/busybox"
+          cp out/x86_64/bzImage out/x86_64/vmlinux "$g/"
+          OUT="$g" TARGET=x86_64-linux-musl sh ztcl/tools/vm-guest/pack.sh
+          OUT="$g" ARCH=x86_64 sh ztcl/tools/vm-guest/image.sh
+          ztcl/tools/vm-guest/test-kvm.sh "$g" | tee test.txt
+          KERNEL=vmlinux ztcl/tools/vm-guest/test-kvm.sh "$g" | tee -a test.txt
+          cp out/old/vmlinux "$g/old.vmlinux"
+          tools/bench.sh "$PWD/ztcl/zig-out/bin/ztcl" "$g" 20 \
+            "$(sed -n 's/^KERNEL=${KERNEL:-\(.*\)}$/\1/p' build.sh)=vmlinux" \
+            "current=old.vmlinux" | tee times.md
+          { grep -E '^(ok|times)' test.txt; echo; cat times.md; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Open the PR
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ needs.check.outputs.version }}
+        run: |
+          major=${V%%.*}
+          summary=changelog.txt
+          if curl -fsSL "https://cdn.kernel.org/pub/linux/kernel/v$major.x/ChangeLog-$V" -o ChangeLog; then
+            n=$(grep -c '^commit ' ChangeLog || true)
+            {
+              echo "$n commits. The commits in the parts that the guest uses:"
+              echo
+              awk '/^commit /{getline; getline; getline; getline; print}' ChangeLog |
+                sed 's/^ *//' |
+                grep -i -E 'virtio|vsock|dm[ -]|dm-verity|squashfs|9p|fuse|kvm|x86|arm64|net:|ipv4|tcp|packet|cve' |
+                head -40 | sed 's/^/- /'
+            } > "$summary"
+          else
+            echo "No ChangeLog-$V on kernel.org (a new stable series): see the release notes of $V." > "$summary"
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "update-linux-$V"
+          git commit -qam "Move the guest kernel to Linux $V"
+          git push -q origin "update-linux-$V"
+          {
+            echo "The newest stable Linux is $V. This PR moves build.sh to it. The build has our fragments and all the patches, for x86-64 and arm64 (artifacts of this run)."
+            echo
+            echo "Boot test of ztcl on KVM (test-kvm.sh, bzImage and vmlinux):"
+            echo
+            echo '```'
+            grep -E '^(ok|times)' test.txt
+            echo '```'
+            echo
+            echo "Times on KVM, verity root, 1 CPU, 64 MB, 20 boots of each, round robin (ms). The runner is a VM, so the times are slower than on a host."
+            echo
+            cat times.md
+            echo
+            echo "## Changelog"
+            echo
+            cat "$summary"
+          } > body.md
+          gh pr create --head "update-linux-$V" --title "Move the guest kernel to Linux $V" --body-file body.md
