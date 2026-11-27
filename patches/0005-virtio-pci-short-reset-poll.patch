@@ -9,7 +9,9 @@ msleep(1).
 
 Measured on Virtualization.framework (M1, 1 CPU, 128 MB, initcall_debug):
 virtio_pci_driver_init took 6.16 ms before, with 2.15, 2.01, and
-2.00 ms for the probes of the three devices.
+2.00 ms for the probes of the three devices, and 3.10 ms after. Guest
+boot to agent listen, 10 boots each: best 9.81 and median 10.02 ms
+before, best 6.72 and median 7.01 ms after.
 
 --- a/drivers/virtio/virtio_pci_modern.c
 +++ b/drivers/virtio/virtio_pci_modern.c

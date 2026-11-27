@@ -60,6 +60,10 @@ From one boot with `initcall_debug`, after these changes:
 
 M1, 1 CPU, 128 MB, the CI verity root, best and median of 10, guest boot to agent listen: the ztcl CI kernel 14.60 and 15.77, this kernel 9.91 and 9.96. The start of the VM process of the framework (about 86 ms) is most of the time from start to answer.
 
+Patch 0005 (the reset poll of virtio PCI), 10 boots each in one session, no `console=`: best 9.81 and median 10.02 before, best 6.72 and median 7.01 after. With `initcall_debug`, `virtio_pci_driver_init` went from 6.16 to 3.10. The reset of each device still takes about 1 ms on VZ.
+
+On VZ with no gain: `pci=nomsi`, `# CONFIG_PCI_QUIRKS is not set`, an LZ4 squashfs root, `console=ttynull`, and `percpu_alloc=page`.
+
 ## WHP
 
 Not measured yet.
