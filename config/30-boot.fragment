@@ -6,7 +6,11 @@
 # CONFIG_VT is not set
 # CONFIG_INPUT is not set
 # CONFIG_SERIO is not set
-# The agent uses vsock. IPv4 stays for the networks of containers.
+# The agent uses vsock. IPv4 and the loopback device are for the
+# programs of the guest, for example the proxy port of the dockyard
+# sandbox (127.0.0.1:3128). arm64 tinyconfig has no INET. IPv4 costs
+# about 0.2 ms of the boot on KVM (inet_init and sysctl_ipv4_init).
+CONFIG_INET=y
 # CONFIG_IPV6 is not set
 # CONFIG_WIRELESS is not set
 # CONFIG_ETHTOOL_NETLINK is not set
