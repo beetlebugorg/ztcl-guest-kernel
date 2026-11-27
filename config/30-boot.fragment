@@ -13,10 +13,20 @@
 CONFIG_INET=y
 # The network device of the NAT of ztcl::vm (ztcl#461), on virtio-mmio
 # and PCI, and the packet sockets of a DHCP client in the guest.
+# VIRTIO_NET needs NETDEVICES and selects NET_FAILOVER. The menus of the
+# Ethernet and WLAN drivers and the PTP clocks stay off.
 CONFIG_NETDEVICES=y
 CONFIG_NET_CORE=y
 CONFIG_VIRTIO_NET=y
 CONFIG_PACKET=y
+# CONFIG_ETHERNET is not set
+# CONFIG_WLAN is not set
+# CONFIG_PTP_1588_CLOCK is not set
+# Linux 7 tinyconfig has no /proc/sys. 6.12 had it.
+CONFIG_PROC_SYSCTL=y
+# arm64 tinyconfig of Linux 7 turns on jump labels. Their patches of the
+# kernel text at boot come before the init of the memory.
+# CONFIG_JUMP_LABEL is not set
 # CONFIG_IPV6 is not set
 # CONFIG_WIRELESS is not set
 # CONFIG_ETHTOOL_NETLINK is not set
