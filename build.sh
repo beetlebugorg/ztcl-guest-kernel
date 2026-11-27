@@ -1,7 +1,7 @@
 #!/bin/sh
 # Builds the guest kernel of ztcl::vm for ARCH (x86_64, the default, or
 # arm64): tinyconfig, then config/10-base, config/20-ARCH (if any),
-# config/30-boot, and config/40-ARCH-boot, on the release archive with
+# config/30-boot, config/40-ARCH-boot, and config/50-workload, on the release archive with
 # patches/*.patch.
 # Output in OUT (default out/ARCH): the kernel (bzImage and vmlinux on
 # x86-64, Image on arm64), System.map, kernel.config, and SHA256SUMS.
@@ -23,7 +23,7 @@ case $arch in
 esac
 frags="$here/config/10-base.fragment"
 [ -f "$here/config/20-$arch.fragment" ] && frags="$frags $here/config/20-$arch.fragment"
-frags="$frags $here/config/30-boot.fragment $here/config/40-$arch-boot.fragment"
+frags="$frags $here/config/30-boot.fragment $here/config/40-$arch-boot.fragment $here/config/50-workload.fragment"
 # A fixed time, user, and host give the same bytes on each build.
 export SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-1767225600}
 export KBUILD_BUILD_TIMESTAMP="@$SOURCE_DATE_EPOCH"

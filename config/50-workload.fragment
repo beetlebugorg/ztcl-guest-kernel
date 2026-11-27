@@ -1,0 +1,37 @@
+# The system calls and kernel features that common programs of the
+# guest use: node, git, toolchains, Claude Code, and programs that
+# sandbox themselves (seccomp filters and user namespaces, as in
+# bubblewrap and Chromium). tinyconfig has none of these, and a
+# program then gets ENOSYS or a failed check. All of this fragment
+# costs 0.13 ms to 0.22 ms of the boot on KVM (initcall_debug, 3 boots;
+# hugepage_init is 0.11 ms of it) and 63 KB of the loaded kernel.
+# madvise(2): the JIT of V8 (node) fails with "Check failed: 0 == ret"
+# with no madvise.
+CONFIG_ADVISE_SYSCALLS=y
+CONFIG_MEMBARRIER=y
+CONFIG_RSEQ=y
+CONFIG_SYSVIPC=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_SECCOMP=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_AIO=y
+CONFIG_CROSS_MEMORY_ATTACH=y
+CONFIG_USERFAULTFD=y
+CONFIG_TRANSPARENT_HUGEPAGE=y
+CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y
+CONFIG_FHANDLE=y
+CONFIG_INOTIFY_USER=y
+CONFIG_FANOTIFY=y
+CONFIG_DNOTIFY=y
+CONFIG_KCMP=y
+CONFIG_NAMESPACES=y
+CONFIG_UTS_NS=y
+CONFIG_IPC_NS=y
+CONFIG_USER_NS=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+# Timers with the resolution of the clock, not of the 1 ms tick, for
+# nanosleep, timerfd, and poll timeouts. With no tick on an idle CPU,
+# an idle guest does not wake its host 1,000 times a second.
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_NO_HZ_IDLE=y

@@ -43,7 +43,3 @@ CONFIG_MEMORY_HOTREMOVE=y
 CONFIG_ZONE_DEVICE=y
 CONFIG_FS_DAX=y
 CONFIG_FUSE_DAX=y
-# madvise(2): the JIT of V8 (node) checks that madvise returns 0, and
-# tinyconfig has no madvise. node fails with "Check failed: 0 == ret"
-# with no ADVISE_SYSCALLS and runs with it.
-CONFIG_ADVISE_SYSCALLS=y
