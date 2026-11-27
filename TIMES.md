@@ -62,6 +62,10 @@ M1, 1 CPU, 128 MB, the CI verity root, best and median of 10, guest boot to agen
 
 Patch 0005 (the reset poll of virtio PCI), 10 boots each in one session, no `console=`: best 9.81 and median 10.02 before, best 6.72 and median 7.01 after. With `initcall_debug`, `virtio_pci_driver_init` went from 6.16 to 3.10. The reset of each device still takes about 1 ms on VZ.
 
+`driver_async_probe=virtio-pci` (ztcl #421 puts it on the command line of `create -image`) runs the three resets at the same time: median 7.0 before, 4.6 after, 40 good boots.
+
+The parts of the VZ boot that are left (`initcall_debug`): the PCI enumeration is 0.86 ms. In it, the scan of the 28 empty slots is about 0.17 ms, and the setup of each of the 3 devices is about 0.16 ms, at about 6 us for each config access. The read of the root through dm-verity and squashfs before the mount is 0.77 ms. On KVM, dm-verity adds 0.4 ms to 0.6 ms (best of 8) to the mount, compared with squashfs on /dev/vda.
+
 On VZ with no gain: `pci=nomsi`, `# CONFIG_PCI_QUIRKS is not set`, an LZ4 squashfs root, `console=ttynull`, and `percpu_alloc=page`.
 
 ## WHP
