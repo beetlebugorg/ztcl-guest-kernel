@@ -11,8 +11,8 @@ The KVM host is an Intel Skylake at 4 GHz with 8 cores, with the builds of other
 
 | Kernel | listen, best | listen, p25 | answer, best | answer, p25 |
 |---|---|---|---|---|
-| ztcl CI kernel (6.12.10), vmlinux, load 6, 80 boots | 11.09 | 12.43 | 21.85 | 24.07 |
-| this kernel, vmlinux, load 6, 80 boots | 4.29 | 4.60 | 13.58 | 14.80 |
+| ztcl CI kernel (6.12.10), vmlinux, load 6, 40 boots | 11.09 | 12.43 | 21.85 | 24.07 |
+| this kernel, vmlinux, load 6, 40 boots | 4.29 | 4.60 | 13.58 | 14.80 |
 | ztcl CI kernel, bzImage, load 6, 40 boots | 11.63 | 12.76 | 24.66 | 26.70 |
 | this kernel, bzImage, load 6, 40 boots | 4.77 | 5.28 | 16.83 | 18.10 |
 | ztcl CI kernel (6.12.10), vmlinux, load 4, 40 boots | 12.15 | 22.82 | 22.69 | 36.41 |
