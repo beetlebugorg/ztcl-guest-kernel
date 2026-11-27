@@ -11,12 +11,16 @@ The KVM host is an Intel Skylake at 4 GHz with 8 cores, with the builds of other
 
 | Kernel | listen, best | listen, p25 | answer, best | answer, p25 |
 |---|---|---|---|---|
+| ztcl CI kernel (6.12.10), vmlinux, load 4, 40 boots | 12.15 | 22.82 | 22.69 | 36.41 |
+| the CI build of this kernel (GCC 13), vmlinux, load 4, 40 boots | 5.03 | 9.56 | 14.54 | 22.02 |
 | ztcl CI kernel (6.12.10), vmlinux, load 8, 30 boots | 16.80 | 26.75 | 30.60 | 43.66 |
 | this kernel, vmlinux, load 8, 30 boots | 6.14 | 12.00 | 16.32 | 27.66 |
 | ztcl CI kernel, vmlinux, load 10, 40 boots | 19.42 | 32.67 | 34.70 | 51.51 |
 | this kernel, vmlinux, load 10, 40 boots | 10.88 | 14.55 | 23.52 | 32.09 |
 | ztcl CI kernel, bzImage, load 10, 40 boots | 19.79 | 28.64 | 39.33 | 53.75 |
 | this kernel, bzImage, load 10, 40 boots | 8.27 | 10.92 | 23.15 | 32.00 |
+
+`test-kvm.sh` (initramfs, `rdinit=/sbin/agent quiet`, best of 10) with the CI build of this kernel, load 4: start 4.36, start to answer 16.86, guest boot to agent 4.33, warm start to answer 0.181. All of its checks pass.
 
 With the initramfs of `test-kvm.tcl` (`rdinit=/sbin/agent quiet`), load 10: listen best 18.40 before and 8.87 after.
 
