@@ -35,3 +35,7 @@ CONFIG_NET_NS=y
 # an idle guest does not wake its host 1,000 times a second.
 CONFIG_HIGH_RES_TIMERS=y
 CONFIG_NO_HZ_IDLE=y
+# The generation ID of a VM (patches/0006): a new ID on a restore or a
+# clone reseeds the RNG and steps the wall clock.
+CONFIG_VIRT_DRIVERS=y
+CONFIG_VMGENID=y

@@ -82,3 +82,10 @@ On VZ with no gain: `pci=nomsi`, `# CONFIG_PCI_QUIRKS is not set`, an LZ4 squash
 ## WHP
 
 The Windows session, 256 MB guest, start to agent answer: 235 ms with the ztcl CI kernel and 119 ms with this kernel, on the monitor of ztcl main. With the host-side changes of ztcl #420, 35 ms, and the guest clock at listen is 16 ms.
+
+## The VM pool and snapshots (KVM, 7.3.6)
+
+- Free page reporting, 128 MB guest with `-balloon 1`, resident memory of the guest on the host after 1 to 8 s: 20.5 MB with the defaults (order 9, 2 s delay), 17.0 MB with order 0, 17.1 MB with order 3 and a delay of 50 ms (the built-in command line now). The rest is mostly the kernel image (6.9 MB), the page structures (2 MB), and the memory in use. A host that maps the kernel from its file can share the 6.9 MB.
+- The generation ID (patch 0006): no cost with no `vmgenid.device=`. With the line and no device behind the region, the probe takes 0.29 ms (each read of the region is an exit to the VMM).
+- Tcl in a vm thread (`tools/vm-guest/bench-iso.tcl` of ztcl, best of 6 runs at host load 25): with THP in madvise mode, fib 24 9.45 ms, strs 29.07 ms, dicts 60.07 ms; with THP always, 11.29, 22.00, and 67.15 ms. The load of the host is larger than the difference, so the default stays madvise, and a vm thread can add `transparent_hugepage=always` to its command line.
+- No NO_HZ_FULL: it needs a second CPU for the timekeeping, and the guest of a vm thread has one. NO_HZ_IDLE is on. A lower HZ saves less than 0.2% (one tick a millisecond). PREEMPT_NONE gives no gain to code in user space, and 7.3 has no such option on x86-64 or arm64.

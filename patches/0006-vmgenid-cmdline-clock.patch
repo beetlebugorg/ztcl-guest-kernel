@@ -1,0 +1,129 @@
+vmgenid: take the device from the command line, and step the clock
+
+A VMM with no ACPI and no device tree (the KVM and WHP monitors of
+ztcl) now gives the generation ID with vmgenid.device=SIZE@BASE:IRQ,
+as virtio_mmio.device= does. The VMM writes a new 16-byte ID at BASE
+on each restore or clone and raises IRQ. The driver then reseeds the
+RNG, as before, so the clones of one snapshot do not share the state
+of the RNG. On an x86 KVM guest it also steps the wall clock to the
+time of the host with KVM_HC_CLOCK_PAIRING, so a guest with no agent
+has the right time after a restore.
+
+--- a/drivers/virt/vmgenid.c
++++ b/drivers/virt/vmgenid.c
+@@ -13,6 +13,12 @@
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/random.h>
++#include <linux/workqueue.h>
++#if defined(CONFIG_X86) && defined(CONFIG_KVM_GUEST)
++#include <linux/timekeeping.h>
++#include <linux/kvm_para.h>
++#include <asm/pgtable_types.h>
++#endif
+ 
+ ACPI_MODULE_NAME("vmgenid");
+ 
+@@ -23,6 +29,35 @@
+ 	u8 this_id[VMGENID_SIZE];
+ };
+ 
++#if defined(CONFIG_X86) && defined(CONFIG_KVM_GUEST)
++static struct kvm_clock_pairing vmgenid_clock_pair;
++
++/*
++ * A new generation ID means that the VM was restored from a snapshot or
++ * cloned, and the wall clock of the guest is still the time of the
++ * snapshot. Step it to the time of the host with KVM_HC_CLOCK_PAIRING.
++ * A host with no clock pairing (not KVM, or a host clocksource that is
++ * not the TSC) leaves the clock as it is.
++ */
++static void vmgenid_step_clock(struct work_struct *work)
++{
++	struct timespec64 ts;
++	long ret;
++
++	if (!kvm_para_available())
++		return;
++	ret = kvm_hypercall2(KVM_HC_CLOCK_PAIRING,
++			     slow_virt_to_phys(&vmgenid_clock_pair),
++			     KVM_CLOCK_PAIRING_WALLCLOCK);
++	if (ret != 0)
++		return;
++	ts.tv_sec = vmgenid_clock_pair.sec;
++	ts.tv_nsec = vmgenid_clock_pair.nsec;
++	do_settimeofday64(&ts);
++}
++static DECLARE_WORK(vmgenid_clock_work, vmgenid_step_clock);
++#endif
++
+ static void vmgenid_notify(struct device *device)
+ {
+ 	struct vmgenid_state *state = dev_get_drvdata(device);
+@@ -33,6 +68,9 @@
+ 	if (!memcmp(old_id, state->this_id, sizeof(old_id)))
+ 		return;
+ 	add_vmfork_randomness(state->this_id, sizeof(state->this_id));
++#if defined(CONFIG_X86) && defined(CONFIG_KVM_GUEST)
++	schedule_work(&vmgenid_clock_work);
++#endif
+ }
+ 
+ static void setup_vmgenid_state(struct vmgenid_state *state, void *virt_addr)
+@@ -145,7 +183,7 @@
+ 	if (!state)
+ 		return -ENOMEM;
+ 
+-	if (dev->of_node)
++	if (dev->of_node || platform_get_resource(pdev, IORESOURCE_MEM, 0))
+ 		ret = vmgenid_add_of(pdev, state);
+ 	else
+ 		ret = vmgenid_add_acpi(dev, state);
+@@ -179,6 +217,47 @@
+ 
+ module_platform_driver(vmgenid_plaform_driver)
+ 
++/*
++ * A VMM with no ACPI and no device tree gives the generation ID on the
++ * command line, as virtio_mmio.device= does for virtio:
++ *
++ *	vmgenid.device=<size>@<baseaddr>:<irq>
++ *
++ * The first 16 bytes at <baseaddr> are the generation ID. The VMM writes
++ * a new ID there on each restore or clone, then raises <irq>.
++ */
++static int vmgenid_cmdline_set(const char *device,
++			       const struct kernel_param *kp)
++{
++	struct resource res[2] = {};
++	unsigned long long base, size;
++	struct platform_device *pdev;
++	unsigned int irq;
++	int processed, consumed = 0;
++	char *str;
++
++	size = memparse(device, &str);
++	processed = sscanf(str, "@%lli:%u%n", &base, &irq, &consumed);
++	if (processed < 2 || str[consumed] || size < VMGENID_SIZE)
++		return -EINVAL;
++
++	res[0].flags = IORESOURCE_MEM;
++	res[0].start = base;
++	res[0].end = base + size - 1;
++	res[1].flags = IORESOURCE_IRQ;
++	res[1].start = res[1].end = irq;
++
++	pdev = platform_device_register_resndata(NULL, "vmgenid",
++						 PLATFORM_DEVID_NONE, res,
++						 ARRAY_SIZE(res), NULL, 0);
++	return PTR_ERR_OR_ZERO(pdev);
++}
++
++static const struct kernel_param_ops vmgenid_cmdline_param_ops = {
++	.set = vmgenid_cmdline_set,
++};
++device_param_cb(device, &vmgenid_cmdline_param_ops, NULL, 0200);
++
+ MODULE_DESCRIPTION("Virtual Machine Generation ID");
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Jason A. Donenfeld <Jason@zx2c4.com>");
