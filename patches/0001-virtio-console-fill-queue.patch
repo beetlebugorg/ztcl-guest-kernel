@@ -12,7 +12,7 @@ is about 2.8 ms of it, the cap about 0.2 ms.
 
 --- a/drivers/char/virtio_console.c
 +++ b/drivers/char/virtio_console.c
-@@ -1295,30 +1295,52 @@
+@@ -1350,30 +1350,51 @@
  	port->cons.ws.ws_col = cols;
  }
  
@@ -26,9 +26,8 @@ is about 2.8 ms of it, the cap about 0.2 ms.
  	struct port_buffer *buf;
  	int nr_added_bufs;
  	int ret;
- 
 +	struct scatterlist sg[1];
-+
+ 
 +	/*
 +	 * Add the buffers with no kick, and kick once at the end: a kick is
 +	 * an exit to the device, and the queue can have hundreds of
@@ -37,7 +36,7 @@ is about 2.8 ms of it, the cap about 0.2 ms.
 +	 */
  	nr_added_bufs = 0;
  	do {
- 		buf = alloc_buf(vq->vdev, PAGE_SIZE, 0);
+ 		buf = alloc_buf(vq->vdev, PAGE_SIZE, 0, GFP_KERNEL);
 -		if (!buf)
 -			return -ENOMEM;
 +		if (!buf) {

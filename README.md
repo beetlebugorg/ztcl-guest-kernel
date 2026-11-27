@@ -1,7 +1,7 @@
 # ztcl-guest-kernel
 
 This repository holds the guest kernel config and patches that ztcl::vm uses.
-The guest kernel is Linux 6.12.119, under GPL-2.0, and these patches are GPL-2.0 too.
+The guest kernel is Linux 7.3.6 (the branch linux-6.12 has 6.12.119), under GPL-2.0, and these patches are GPL-2.0 too.
 
 ztcl and its other projects use only the built kernels, the config fragments, and the measured times from this repository.
 
@@ -9,7 +9,7 @@ ztcl and its other projects use only the built kernels, the config fragments, an
 
 - `config/`: the config fragments, in the order that `build.sh` merges them onto `tinyconfig`. `10-base` and `20-x86_64` are the fragments of ztcl (`tools/vm-guest`). `30-boot` and `40-ARCH-boot` are the options for a fast boot.
 - `patches/`: the kernel patches. The header of each patch gives its effect and its measured gain.
-- `build.sh`: builds the kernel from the release archive of kernel.org, with the patches and the fragments.
+- `build.sh`: builds the kernel from the release archive of kernel.org, with the patches and the fragments. GCC 16.2.1 (this host) and GCC 13 (the Ubuntu 24.04 runners of CI) both build it.
 - `build-inc.sh`: an incremental build in `work/` for tests.
 - `TIMES.md`: the boot times, and the gain of each change.
 - `.github/workflows/build.yml`: builds both architectures on each push to main. The artifacts are `guest-kernel-x86_64` and `guest-kernel-arm64`.

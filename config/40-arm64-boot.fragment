@@ -1,3 +1,3 @@
 # The arm64 boot options of the guest of ztcl::vm, after 30-boot.
-# dm-verity: SHA-256 with the Armv8 crypto extensions.
-CONFIG_CRYPTO_SHA2_ARM64_CE=y
+# None yet. Linux 7 picks the SHA-256 code of the CPU for dm-verity with
+# no option (CRYPTO_LIB_SHA256_ARCH).

@@ -9,8 +9,8 @@
 # an arm64 kernel on an x86-64 host.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
-KERNEL=${KERNEL:-6.12.119}
-KERNEL_SHA=143b287965acb9e270095b95894e59e2eba306d7e1f6b260d4ba74fca70c0333
+KERNEL=${KERNEL:-7.3.6}
+KERNEL_SHA=8183d475a76a0faffa92d6cd500af421f589dfd0300a0f1060bb875e11d45723
 arch=${ARCH:-x86_64}
 work=${WORK:-$here/work}
 out=${OUT:-$here/out/$arch}
@@ -31,7 +31,7 @@ export KBUILD_BUILD_USER=ztcl KBUILD_BUILD_HOST=ztcl KBUILD_BUILD_VERSION=1
 mkdir -p "$work" "$out"
 cd "$work"
 tar=linux-$KERNEL.tar.xz
-[ -f "$tar" ] || curl -fsSLO "https://cdn.kernel.org/pub/linux/kernel/v6.x/$tar"
+[ -f "$tar" ] || curl -fsSLO "https://cdn.kernel.org/pub/linux/kernel/v${KERNEL%%.*}.x/$tar"
 echo "$KERNEL_SHA  $tar" | sha256sum -c
 src=linux-$KERNEL-$arch
 rm -rf "$src" "linux-$KERNEL"
@@ -41,6 +41,11 @@ cd "$src"
 for p in "$here"/patches/*.patch; do
     [ -f "$p" ] || continue
     echo "patch: $(basename "$p")"
+    if ! patch -p1 -s --dry-run < "$p" > /dev/null; then
+        echo "error: patches/$(basename "$p") does not apply to Linux $KERNEL." >&2
+        echo "Port the patch or drop it, as UPDATING.md says." >&2
+        exit 1
+    fi
     patch -p1 -s < "$p"
 done
 # shellcheck disable=SC2086

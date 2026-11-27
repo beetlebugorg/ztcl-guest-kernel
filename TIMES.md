@@ -1,5 +1,16 @@
 # Boot times
 
+The kernel is Linux 7.3.6 since 2026-11-27. The tables below that do not name a version are of 6.12 (branch linux-6.12).
+
+## Linux 7.3.6 against 6.12.119
+
+| Host | 6.12, best / median | 7.3.6, best / median |
+|---|---|---|
+| VZ, M1, 1 CPU, 128 MB, async probe, guest boot to listen, 10 boots | 4.34 / 4.62 | 5.86 / 6.16 |
+| KVM, 1 CPU, 64 MB, guest boot to listen, 60 boots, load 10 | 6.90 / p25 9.24 | 8.13 / p25 9.36 |
+
+On VZ, 7.3.6 is about 1.5 ms slower: 0.45 ms in the early setup, 0.56 ms in the initcalls, and 0.5 ms after the start of init. 7.3 has only PREEMPT and PREEMPT_LAZY on x86-64 and arm64, and arm64 forces JUMP_LABEL and VMAP_STACK. A test build with PREEMPT_NONE (a change of Kconfig) gave no gain on KVM that the load let me measure. virtio-net and packet sockets cost nothing measurable on VZ (4.34 / 4.58 on 6.12).
+
 The times are in ms. Each guest has 1 CPU and 64 MB. The root is the signed image of ztcl: squashfs on dm-verity, with `dm-mod.create` on the command line and no initramfs. The agent of ztcl is the first process.
 
 - "listen": the boot clock of the guest (`CLOCK_BOOTTIME`) when the agent listens on vsock.
