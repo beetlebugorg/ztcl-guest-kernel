@@ -1,0 +1,22 @@
+# panel	step	label	value	style	note
+# style: solid = a point of the main series, hollow = a noisy point (a loaded host).
+kvm	1	ztcl CI kernel 6.12.10	11.09	solid	load 6
+kvm	2	6.12.119 tuned	4.29	solid	load 6
+kvm	3	6.12.119 tuned	6.90	hollow	load 10
+kvm	4	7.3.6	8.13	hollow	load 10
+vz	1	ztcl CI kernel 6.12.10	14.60	solid	
+vz	2	6.12.119 tuned	9.91	solid	
+vz	3	+ patch 0005	6.72	solid	
+vz	4	+ async probe	4.34	solid	
+vz	5	7.3.6	5.86	solid	
+whp	1	ztcl CI kernel 6.12.10	235	solid	
+whp	2	6.12.119 tuned	119	solid	
+whp	3	+ host fixes (ztcl #420)	35	solid	
+size	1	ztcl CI kernel 6.12.10	9.07	solid	
+size	2	6.12.119 tuned	9.00	solid	
+size	3	7.3.6	6.73	solid	
+size	4	+ balloon, DAX	6.82	solid	
+size	5	+ workload syscalls	6.89	solid	
+mem	1	reporting defaults	20.5	solid	
+mem	2	order 0	17.0	solid	
+mem	3	order 3, 50 ms	17.1	solid	
