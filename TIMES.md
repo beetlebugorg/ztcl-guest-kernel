@@ -70,4 +70,4 @@ On VZ with no gain: `pci=nomsi`, `# CONFIG_PCI_QUIRKS is not set`, an LZ4 squash
 
 ## WHP
 
-Not measured yet.
+The Windows session, 256 MB guest, start to agent answer: 235 ms with the ztcl CI kernel and 119 ms with this kernel, on the monitor of ztcl main. With the host-side changes of ztcl #420, 35 ms, and the guest clock at listen is 16 ms.
