@@ -1,0 +1,31 @@
+x86/mm: free the gaps of the kernel image with no poison
+
+free_init_pages() wrote POISON_FREE_INITMEM to each page that it
+freed: the init sections, the SMP alternatives, and the gaps around
+rodata. The pages of the gaps were not written before, and in a
+guest the first write to a page is a fault in the host, so the
+poison of 2.3 MiB took about 1 ms. The pages now go to the page
+allocator as they are. A page from the allocator has no defined
+contents, so the users of the pages see no change.
+
+Measured on KVM, 1 CPU, 64 MB, root on dm-verity, two runs of 8 boots:
+the mount of the root to the start of init was 1.0 ms and 1.8 ms
+(mean) before, and 0.27 ms and 0.24 ms after.
+
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -934,8 +934,12 @@
+ 		set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
+ 		set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
+ 
+-		free_reserved_area((void *)begin, (void *)end,
+-				   POISON_FREE_INITMEM, what);
++		/*
++		 * No poison: the memset() of the poison is the first write
++		 * to the pages of the gaps, and in a guest each first write
++		 * to a page is a fault in the host.
++		 */
++		free_reserved_area((void *)begin, (void *)end, -1, what);
+ 	}
+ }
+ 

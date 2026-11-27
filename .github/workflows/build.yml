@@ -1,0 +1,28 @@
+name: Build
+# Builds the guest kernel of ztcl::vm on each push to main and on
+# request, for x86-64 and arm64, with the patches and the fragments.
+# The artifacts are guest-kernel-x86_64 and guest-kernel-arm64.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kernel:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - run: sudo apt-get update && sudo apt-get install -y build-essential flex bison bc libelf-dev libssl-dev
+      - run: ARCH=${{ matrix.arch }} ./build.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: guest-kernel-${{ matrix.arch }}
+          path: out/${{ matrix.arch }}/
