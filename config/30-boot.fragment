@@ -11,6 +11,12 @@
 # sandbox (127.0.0.1:3128). arm64 tinyconfig has no INET. IPv4 costs
 # about 0.2 ms of the boot on KVM (inet_init and sysctl_ipv4_init).
 CONFIG_INET=y
+# The network device of the NAT of ztcl::vm (ztcl#461), on virtio-mmio
+# and PCI, and the packet sockets of a DHCP client in the guest.
+CONFIG_NETDEVICES=y
+CONFIG_NET_CORE=y
+CONFIG_VIRTIO_NET=y
+CONFIG_PACKET=y
 # CONFIG_IPV6 is not set
 # CONFIG_WIRELESS is not set
 # CONFIG_ETHTOOL_NETLINK is not set
