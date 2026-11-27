@@ -11,6 +11,10 @@ The KVM host is an Intel Skylake at 4 GHz with 8 cores, with the builds of other
 
 | Kernel | listen, best | listen, p25 | answer, best | answer, p25 |
 |---|---|---|---|---|
+| ztcl CI kernel (6.12.10), vmlinux, load 6, 80 boots | 11.09 | 12.43 | 21.85 | 24.07 |
+| this kernel, vmlinux, load 6, 80 boots | 4.29 | 4.60 | 13.58 | 14.80 |
+| ztcl CI kernel, bzImage, load 6, 40 boots | 11.63 | 12.76 | 24.66 | 26.70 |
+| this kernel, bzImage, load 6, 40 boots | 4.77 | 5.28 | 16.83 | 18.10 |
 | ztcl CI kernel (6.12.10), vmlinux, load 4, 40 boots | 12.15 | 22.82 | 22.69 | 36.41 |
 | the CI build of this kernel (GCC 13), vmlinux, load 4, 40 boots | 5.03 | 9.56 | 14.54 | 22.02 |
 | ztcl CI kernel (6.12.10), vmlinux, load 8, 30 boots | 16.80 | 26.75 | 30.60 | 43.66 |
@@ -40,18 +44,22 @@ Each gain is from `initcall_debug` or from the times of the kernel log, on KVM. 
 | `loglevel=1`, the effect of `console=ttynull` on the warnings of the boot | listen, p25 of 30 | 15.74 | 13.52 |
 | `CONFIG_CRYPTO_SHA256_SSSE3` | dm-verity uses `sha256-avx2` | | |
 
-The changes that gave no measured gain and are not in the kernel: a cap of the first fill of the vsock receive queue (64 buffers), `virtio_blk.queue_depth`, `io_delay=none`, `noreplace-smp`, and `no_timer_check` (KVM sets it already).
+The changes that gave no measured gain and are not in the kernel: a cap of the first fill of the vsock receive queue (64 buffers), `virtio_blk.queue_depth`, `io_delay=none`, `noreplace-smp`, `no_timer_check` (KVM sets it already), `try_verify_in_tasklet` in the dm-verity table, and a work item for the sysfs nodes of the parameters of the built-in modules (0.5 ms less in the initcall, the same time to listen).
 
 ## The time that is left, on KVM
 
 From one boot with `initcall_debug`, after these changes:
 
-- The first write of the guest to each page of its memory is a fault in the host. The guest has 18.6 MB of resident memory after the boot. The init of the page structures (1.7 ms) and the per-CPU memory were the largest parts of this cost.
+- The first write of the guest to each page of its memory is a fault in the host. The guest has 18.6 MB of resident memory after the boot. The init of the page structures (1.7 ms) and the per-CPU memory were the largest parts of this cost. Half of the page structures are for the end of the last 128 MB section, after the end of the memory of a 64 MB guest: `pfn_valid()` is true for each page of an early section, so the boot must init them. Huge pages for the guest memory on the host remove most of this cost.
 - Each access of the guest to a register of a virtio-mmio device of the monitor is an exit to user space. A virtio probe has about 40 to 50 of these accesses and takes 0.4 ms to 0.7 ms (console, vsock, and block).
-- The patches of the alternatives: 0.7 ms.
+- The patches of the alternatives: 0.7 ms, all in `apply_alternatives` (about 1,400 sites, with an instruction decode at each site).
 - The sysfs nodes of the parameters of the built-in modules (`param_sysfs_builtin_init`): 0.5 ms.
 - The mount of the root through dm-verity: 0.9 ms.
 
-## Virtualization.framework and WHP
+## Virtualization.framework
 
-Not measured yet. The measurements go through the sessions of those hosts.
+M1, 1 CPU, 128 MB, the CI verity root, best and median of 10, guest boot to agent listen: the ztcl CI kernel 14.60 and 15.77, this kernel 9.91 and 9.96. The start of the VM process of the framework (about 86 ms) is most of the time from start to answer.
+
+## WHP
+
+Not measured yet.
