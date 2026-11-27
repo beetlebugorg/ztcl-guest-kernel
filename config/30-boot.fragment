@@ -31,3 +31,12 @@ CONFIG_SQUASHFS_LZ4=y
 CONFIG_SQUASHFS_4K_DEVBLK_SIZE=y
 # The console of console=ttynull.
 CONFIG_NULL_TTY=y
+# Free page reporting (virtio-balloon) for the VM pool, and the DAX
+# window of virtio-fs for shares: PROPOSAL.md. With no balloon device
+# and no DAX share, they cost about 50 us of the boot on KVM and 90 KB.
+CONFIG_VIRTIO_BALLOON=y
+CONFIG_MEMORY_HOTPLUG=y
+CONFIG_MEMORY_HOTREMOVE=y
+CONFIG_ZONE_DEVICE=y
+CONFIG_FS_DAX=y
+CONFIG_FUSE_DAX=y
