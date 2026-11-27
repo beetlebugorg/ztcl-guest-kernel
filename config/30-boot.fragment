@@ -28,6 +28,9 @@ CONFIG_PACKET=y
 # The root is squashfs on dm-verity. LZ4 is for a root that the image
 # makes with LZ4.
 CONFIG_SQUASHFS_LZ4=y
+# The tools disk of dockyard is squashfs with xz (78 MB, against 106 MB
+# with gzip). Only a mount of an xz disk uses the code.
+CONFIG_SQUASHFS_XZ=y
 CONFIG_SQUASHFS_4K_DEVBLK_SIZE=y
 # The console of console=ttynull.
 CONFIG_NULL_TTY=y
@@ -40,3 +43,7 @@ CONFIG_MEMORY_HOTREMOVE=y
 CONFIG_ZONE_DEVICE=y
 CONFIG_FS_DAX=y
 CONFIG_FUSE_DAX=y
+# madvise(2): the JIT of V8 (node) checks that madvise returns 0, and
+# tinyconfig has no madvise. node fails with "Check failed: 0 == ret"
+# with no ADVISE_SYSCALLS and runs with it.
+CONFIG_ADVISE_SYSCALLS=y
